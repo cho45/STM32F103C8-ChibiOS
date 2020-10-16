@@ -186,6 +186,10 @@ include $(RULESPATH)/rules.mk
 flash:
 	openocd -f interface/stlink.cfg -f target/stm32f1x.cfg  -c "program ./build/ch.bin 0x08000000 verify reset exit"
 
+compile_commands.json: Makefile
+	make clean
+	bear make
+
 #
 # Custom rules
 ##############################################################################
