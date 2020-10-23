@@ -9,11 +9,11 @@
 
 #include "usbcfg.h"
 
-#include "st7735.h"
+#include "st7789.h"
 
 static THD_WORKING_AREA(waThreadShell, 2048);
 static THD_WORKING_AREA(waThread1, 128);
-static THD_WORKING_AREA(waThreadDraw, 728);
+static THD_WORKING_AREA(waThreadDraw, 2048);
 uint32_t count = 0;
 
 static void cmd_hello(BaseSequentialStream *chp, int argc, char *argv[]) {
@@ -36,8 +36,17 @@ static THD_FUNCTION(Thread1, arg) {
 	(void)arg;
 
 	chRegSetThreadName("blink");
+
+	int n = 100;
+	while (n-- > 0) {
+		palClearPad(GPIOC, 13);
+		chThdSleepMilliseconds(50);
+		palSetPad(GPIOC, 13);
+		chThdSleepMilliseconds(50);
+	}
+
 	while (true) {
-		systime_t time = serusbcfg.usbp->state == USB_ACTIVE ? 100 : 500;
+		systime_t time = serusbcfg.usbp->state == USB_ACTIVE ? 100 : 200;
 		palClearPad(GPIOC, 13);
 		chThdSleepMilliseconds(time);
 		palSetPad(GPIOC, 13);
@@ -54,26 +63,31 @@ static THD_FUNCTION(ThreadDraw, arg) {
 
 	chRegSetThreadName("draw");
 
-	st7735_init();
-	st7735_setRotate(0);
+	st7789_init();
+	st7789_setRotate(2);
 
-	st7735_fillRect(0, 0, 128, 128, RGB565(0xffffff));
+	st7789_fillRect(0, 0, 240, 240, RGB565(0xffffff));
 	chThdSleepMilliseconds(1000);
-	st7735_fillRect(0, 0, 128, 128, RGB565(0x000000));
+	st7789_fillRect(0, 0, 240, 240, RGB565(0x000000));
 
 	while (1) {
-		chEvtWaitAnyTimeout((eventmask_t)1, TIME_MS2I(1000));
-
+		//chThdSleepMilliseconds(200);
+		n = 0;
+		n = chsnprintf(buf + n, 32 - n, "test %d", count);
+		buf[n] = '\0';
+		st7789_drawStringScaled(5, 0, n, buf, RGB565(0xffffff), RGB565(0x000000), 1, 1);
 
 		n = 0;
-		n = chsnprintf(buf + n, 32 - n, "PEP 0.00uW", count);
+		n = chsnprintf(buf + n, 32 - n, "test %d", count);
 		buf[n] = '\0';
-		st7735_drawStringScaled(5, 0, n, buf, RGB565(0xffffff), RGB565(0x000000), 1, 2);
+		st7789_drawStringScaled(5, 20, n, buf, RGB565(0xff0000), RGB565(0x000000), 2, 2);
 
 		n = 0;
-		n = chsnprintf(buf + n, 32 - n, "AVG 0.00uW", count);
+		n = chsnprintf(buf + n, 32 - n, "test %d", count);
 		buf[n] = '\0';
-		st7735_drawStringScaled(5, 20, n, buf, RGB565(0xffffff), RGB565(0x000000), 1, 2);
+		st7789_drawStringScaled(5, 50, n, buf, RGB565(0x0000ff), RGB565(0x000000), 3, 3);
+
+		count++;
 	}
 }
 
